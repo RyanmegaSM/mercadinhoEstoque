@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int             @id @default(autoincrement())
+  email        String          @unique
+  nome         String
+  senha        String
+  tipoDeAcesso Int
+  movimentacao StockMovement[]
+
+  @@map("Usuarios")
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  nome      String
+  descricao String
+  produtos  Product[]
+
+  @@map("Categorias")
+}
+
+model Product {
+  id                                Int                    @id @default(autoincrement())
+  nome                              String
+  descricao                         String
+  precoUnitario                     Float
+  categoriaId                       Int
+  BatchOnProducts                   BatchOnProducts[]
+  Categoria                         Category               @relation(fields: [categoriaId], references: [id])
+  movimentacao                      StockMovement[]
+  movimentacoesStockMovementProduct StockMovementProduct[]
+  lote                              Batch[]                @relation("BatchToProduct")
+
+  @@map("Produtos")
+}
+
+model Supplier {
+  id       Int     @id @default(autoincrement())
+  nome     String
+  telefone String
+  endereco String
+  cnpj     String
+  Lotes    Batch[]
+
+  @@map("Fornecedores")
+}
+
+model Batch {
+  id              Int               @id @default(autoincrement())
+  preco           Float
+  quantidade      Int
+  validade        DateTime
+  fornecedorId    Int
+  fornecedor      Supplier          @relation(fields: [fornecedorId], references: [id])
+  BatchOnProducts BatchOnProducts[]
+  produtos        Product[]         @relation("BatchToProduct")
+}
+
+model StockMovement {
+  id         Int                    @id @default(autoincrement())
+  data       DateTime
+  tipo       String
+  quantidade Int
+  produtoId  Int?
+  usuarioId  Int?
+  Produto    Product?               @relation(fields: [produtoId], references: [id])
+  Usuario    User?                  @relation(fields: [usuarioId], references: [id])
+  produtos   StockMovementProduct[]
+}
+
+model StockMovementProduct {
+  id             Int           @id @default(autoincrement())
+  quantidade     Int
+  produtoId      Int
+  movimentacaoId Int
+  movimentacao   StockMovement @relation(fields: [movimentacaoId], references: [id])
+  produto        Product       @relation(fields: [produtoId], references: [id])
+
+  @@map("StockMovementOnProducts")
+}
+
+model BatchOnProducts {
+  produtoId  Int
+  loteId     Int
+  quantidade Int
+  lote       Batch   @relation(fields: [loteId], references: [id])
+  produto    Product @relation(fields: [produtoId], references: [id])
+
+  @@id([produtoId, loteId])
+}
